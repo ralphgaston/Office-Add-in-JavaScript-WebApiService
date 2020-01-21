@@ -31,21 +31,38 @@ namespace WebAPI_SampleWeb.API
         {
             try
             {
-                const string MailingAddressFrom = "addin_name@contoso.com ";
+                const string MailingAddressFrom = "addin_name@contoso.com";
                 const string MailingAddressTo = "dev_team@contoso.com";
-                const string SmtpHost = "smtp.contoso.com";
-                const int SmtpPort = 587;
+                // Use the MX record for the SmtpHost. Find it with Nslookup.
+                // Get the DNS server from the command prompt with ipconfig /all
+                // then use the DNS server address with nslookup at the command prompt to get the MX record.
+                // example would look like the following:
+                // C:\>nslookup
+                // Default Server: router.xxxx.com
+                // Address: XXX.XXX.XX.X
+                // > server <DNS server address here>
+                // Default Server: router.xxxx.com
+                // Address: XXX.XXX.XX.X
+                // > set q=mx
+                // >contoso.com
+                // Server: router.xxx.com
+                // Address: XXX.XXX.XX.X
+                // Non-authoritative answer:
+                // contoso.com   MX preference = 0, mail exchanger = contosodomain.mail.protection.outlook.com
+                const string SmtpHost = "contosodomain.mail.protection.outlook.com";
+                //port 587 fails.
+                const int SmtpPort = 25;
                 const bool SmtpEnableSsl = true;
                 const string SmtpCredentialsUsername = "username";
                 const string SmtpCredentialsPassword = "password";
 
-                var subject = "Sample add-in feedback, " + DateTime.Now.ToString("MMM dd, yyyy, hh:mm tt");
-                var body = "Rating: " + request.Rating + "\n\n" + "Feedback:\n" + request.Feedback;
+                string subject = "Sample add-in feedback, " + DateTime.Now.ToString("MMM dd, yyyy, hh:mm tt");
+                string body = "Rating: " + request.Rating + "\n\n" + "Feedback:\n" + request.Feedback;
 
                 MailMessage mail = new MailMessage(MailingAddressFrom, MailingAddressTo, subject, body);
                 mail.IsBodyHtml = false; // Send as plain text, to avoid needing to escape special characters, etc.
 
-                var smtp = new SmtpClient(SmtpHost, SmtpPort)
+                SmtpClient smtp = new SmtpClient(SmtpHost, SmtpPort)
                 {
                     EnableSsl = SmtpEnableSsl,
                     Credentials = new NetworkCredential(SmtpCredentialsUsername, SmtpCredentialsPassword)
@@ -59,7 +76,7 @@ namespace WebAPI_SampleWeb.API
                     Message = "Your feedback has been sent successfully."
                 };
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 // Could add some logging functionality here.  For a a more thorough discussion on error handling, 
                 // see the "Try-catch" section in the accompanying walkthrough doc for an earlier version of this sample:
@@ -67,7 +84,7 @@ namespace WebAPI_SampleWeb.API
 
                 return new FeedbackResponse()
                 {
-                    Status = "Sorry, your feedback could not be sent",
+                    Status = $"Sorry, your feedback could not be sent.\nError:{ex.Message},\nStackTrace:{ex.StackTrace},\nHelpLink:{ex.HelpLink}\n",
                     Message = "You may try emailing it directly to the support team."
                 };
             }
